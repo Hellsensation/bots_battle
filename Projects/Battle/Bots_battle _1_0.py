@@ -1,81 +1,87 @@
+from typing import ClassVar
 import random
+from bots import FireBot, WindBot, WaterBot
 
 
-class Bot:
-    def __init__(self, name):
-        self.name = name
-        self.lvl = 1
-        self.__hp = 10
-        self.atk = 2
-        self.defence = 1
-        self.pix_money = 0
-        self.energy = 0
-        self.def_zone = None
-        self.atk_zone = None
+def calculate_damage(attacking: ClassVar[int], defensive: ClassVar[int]) -> None:
+    """
+    Функция подсчета урона при обычном ударе. Принимает значения атаки и защиты.
+    """
 
-    def __str__(self):
-        if self.def_zone is None and self.atk_zone is None:
-            return f'\nСостояние {self.name}:\nLVL:{self.lvl}\nHP:{self.get_hp()}\nAttack:{self.atk}\n' \
-                   f'Defence{self.defence}\n' \
-                   f'PixMoney:{self.pix_money}\nEnergy:{self.energy}\n'
-        else:
-            return f'\nСостояние {self.name}:\nВыбранная область защиты:{self.def_zone}\n' \
-                   f'Выбранная область атаки:{self.atk_zone}\n'
-
-    def set_hp(self, score):
-        self.__hp += (-score)
-
-    def get_hp(self):
-        return self.__hp
-
-
-def calculate_damage(attacking, defensive):
     if attacking.atk_zone == defensive.def_zone:
-        defensive.set_hp(attacking.atk - 2)
-        print(f'{defensive.name} отражает удар!!!')
+        defensive.set_hp(attacking.get_atk() // 2)
+        print(f'{defensive.get_name()} отражает удар!!!')
+
     else:
-        defensive.set_hp(attacking.atk)
-        print(f'{defensive.name} получает {attacking.atk} урона.')
+
+        defensive.set_hp(attacking.get_atk()-defensive.get_defence())
+        print(f'{defensive.get_name()} получает {attacking.get_atk()-defensive.get_defence()} урона.')
+        attacking.set_energy(5)
 
 
-def battle(player_1, player_2):
+def battle(player_1: ClassVar, player_2:ClassVar) -> None:
+    """
+    Функция отвечающая за поединок. Принимает двух игроков.
+    """
     choose_attack_zone = int(input('\nВыберите зону для атаки:\n1-Голова\n2-Тело\n3-Ноги\nОтвет: \n'))
-    player_1.atk_zone = choose_attack_zone
+    try:
+        if choose_attack_zone not in (1, 2, 3):
+            raise IndexError
 
-    enemy_defence_zone = random.randint(1, 3)  # Бот выбирает зону защиты.
-    player_2.def_zone = enemy_defence_zone
+        player_1.atk_zone = choose_attack_zone
 
-    calculate_damage(player_1, player_2)
+        enemy_defence_zone = random.randint(1, 3)  # Бот выбирает зону защиты.
+        player_2.def_zone = enemy_defence_zone
 
-    print(player_1)
-    print(player_2)
+        calculate_damage(player_1, player_2)
 
-    choose_defence_zone = int(input('\nВыберите зону для защиты:\n1-Голова\n2-Тело\n3-Ноги\nОтвет: \n'))
-    player_1.def_zone = choose_defence_zone
+        choose_defence_zone = int(input('\nВыберите зону для защиты:\n1-Голова\n2-Тело\n3-Ноги\nОтвет: \n'))
+        if choose_defence_zone not in (1, 2, 3):
+            raise IndexError
+        player_1.def_zone = choose_defence_zone
 
-    enemy_atk_zone = random.randint(1, 3)  # Бот выбирает зону атаки.
-    player_2.def_zone = enemy_atk_zone
+        enemy_atk_zone = random.randint(1, 3)  # Бот выбирает зону атаки.
+        player_2.def_zone = enemy_atk_zone
 
-    calculate_damage(player_2, player_1)
+        calculate_damage(player_2, player_1)
 
-    print(player_1)
-    print(player_2)
+    except IndexError:
+        print('Неверное значение')
+        battle(player_1, player_2)
 
 
-user = Bot('User')
-npc = Bot('NPC')
+def round_design(player_1: ClassVar, player_2: ClassVar):
+    while player_1.get_hp() > 0 or player_2.get_hp() > 0:
+        global rounds
+        rounds += 1
+        print(f'====== Раунд {rounds} ======')
+        battle(player_1, player_2)
+        print(f'\n!!!!!!!!!!!!!!\n'
+              f'По результатам {rounds} раунда:\n'
+              f'User HP - {player_1.get_hp()}\n'
+              f'User energy - {player_1.get_energy()}\n\n'
+              f'NPC HP - {player_2.get_hp()}\n'
+              f'NPC energy - {player_2.get_energy()}\n'
+              f'!!!!!!!!!!!!!!')
+        print()
+        if player_1.get_hp() <= 0:
+            print(f'\nПобеду одержал {player_2.get_name()}')
+            break
+        elif player_2.get_hp() <= 0:
+            print(f'\nПобеду одержал {player_1.get_name()}')
+            player_2.get_lvl(1)
+
+
 rounds = 0
-print(user)
-print(npc)
 
-while user.get_hp() > 0 or npc.get_hp() > 0:
-    rounds += 1
-    print(f'====== Раунд {rounds} ======')
-    battle(user, npc)
-    print(f'По результатам {rounds} раунда:\nUser HP - {user.get_hp()}\nNPC HP - {npc.get_hp()}')
-    if user.get_hp() <= 0:
-        print(f'\nПобеду одержал {npc.name}')
-        break
-    elif npc.get_hp() <= 0:
-        print(f'\nПобеду одержал {user.name}')
-        break
+fire_bot = FireBot('Огненный')
+water_bot = WaterBot('Водный')
+wind_bot = WindBot('Ветреный')
+
+print(fire_bot)
+print(water_bot)
+
+round_design(fire_bot, water_bot)
+
+
+
